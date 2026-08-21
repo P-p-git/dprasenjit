@@ -3,9 +3,14 @@ const cors = require('cors');
 const path = require('path');
 const dotenv = require('dotenv');
 const { initializeDatabase } = require('./config/db');
+const { ensureSeeded } = require('./utils/seed');
 const errorHandler = require('./middleware/errorMiddleware');
 
-dotenv.config();
+dotenv.config({ path: path.join(__dirname, '.env') });
+
+if (!process.env.JWT_SECRET) {
+  console.warn('WARNING: JWT_SECRET is not set. Login/register will fail. Add JWT_SECRET to your environment variables.');
+}
 
 initializeDatabase();
 
@@ -44,9 +49,19 @@ app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+const startServer = async () => {
+  try {
+    await ensureSeeded();
+  } catch (err) {
+    console.error('Database seed check failed:', err.message);
+  }
+
+  app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+  });
+};
+
+startServer();
 
 process.on('uncaughtException', (err) => {
   console.error('Uncaught Exception:', err);

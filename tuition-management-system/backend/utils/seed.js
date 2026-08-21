@@ -1,4 +1,5 @@
 const dotenv = require('dotenv');
+const path = require('path');
 const { db, initializeDatabase } = require('../config/db');
 const User = require('../models/User');
 const Teacher = require('../models/Teacher');
@@ -7,11 +8,12 @@ const Batch = require('../models/Batch');
 const Fee = require('../models/Fee');
 const Notice = require('../models/Notice');
 
-dotenv.config();
+dotenv.config({ path: path.join(__dirname, '..', '.env') });
 
 const seedDB = async () => {
   try {
     initializeDatabase();
+
     console.log('Database initialized for seeding...');
 
     db.exec(`
@@ -148,12 +150,28 @@ const seedDB = async () => {
     console.log('Student:  student02 / student@123');
     console.log('Student:  student03 / student@123');
     console.log('Student:  student04 / student@123');
-
-    process.exit(0);
   } catch (error) {
-    console.error('Seeding error:', error);
-    process.exit(1);
+    throw error;
   }
 };
 
-seedDB();
+const ensureSeeded = async () => {
+  const row = db.prepare('SELECT COUNT(*) AS count FROM users').get();
+  if (row.count > 0) {
+    return false;
+  }
+  console.log('Empty database detected - seeding demo data...');
+  await seedDB();
+  return true;
+};
+
+if (require.main === module) {
+  seedDB()
+    .then(() => process.exit(0))
+    .catch((error) => {
+      console.error('Seeding error:', error);
+      process.exit(1);
+    });
+}
+
+module.exports = { seedDB, ensureSeeded };

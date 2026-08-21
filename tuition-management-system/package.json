@@ -1,0 +1,16 @@
+{
+  "name": "tuition-management-system",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Tuition Management System - Express + SQLite backend serving a React (Vite) frontend",
+  "engines": {
+    "node": "22.x"
+  },
+  "scripts": {
+    "build": "cd backend && npm install && cd ../frontend && npm install && npm run build",
+    "start": "node backend/server.js",
+    "seed": "cd backend && node utils/seed.js",
+    "dev:backend": "cd backend && npm run dev",
+    "dev:frontend": "cd frontend && npm run dev"
+  }
+}
