@@ -1,0 +1,63 @@
+const Attendance = require('../models/Attendance');
+
+const markAttendance = async (req, res) => {
+  try {
+    const { batchId, date, attendance } = req.body;
+
+    if (!batchId || !date || !attendance) {
+      return res.status(400).json({ success: false, message: 'Please provide batch, date, and attendance data' });
+    }
+
+    const results = [];
+
+    for (const record of attendance) {
+      const result = await Attendance.findOneAndUpdate(
+        { student: record.studentId, batch: batchId, date: date },
+        { status: record.status, markedBy: req.user.profile_id || null },
+        { upsert: true }
+      );
+      results.push(result);
+    }
+
+    res.status(201).json({ success: true, count: results.length, data: results });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+const getAttendance = async (req, res) => {
+  try {
+    const { batch, date, student } = req.query;
+    let conditions = {};
+
+    if (batch) conditions.batch = batch;
+    if (date) conditions.date = date;
+    if (student) conditions.student = student;
+
+    const records = await Attendance.find(conditions);
+
+    res.json({ success: true, count: records.length, data: records });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+const getStudentAttendanceSummary = async (req, res) => {
+  try {
+    const records = await Attendance.find({ student: req.params.studentId });
+
+    const totalClasses = records.length;
+    const present = records.filter(r => r.status === 'present').length;
+    const absent = records.filter(r => r.status === 'absent').length;
+    const percentage = totalClasses > 0 ? Math.round((present / totalClasses) * 100) : 0;
+
+    res.json({
+      success: true,
+      data: { totalClasses, present, absent, percentage },
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+module.exports = { markAttendance, getAttendance, getStudentAttendanceSummary };
