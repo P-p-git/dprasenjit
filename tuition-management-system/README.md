@@ -90,7 +90,7 @@ This will create:
 
 | Role | Username | Password |
 |------|----------|----------|
-| Admin | admin | admin123 |
+| Admin | Prasenjit Das | Prasenjit@2004 |
 | Teacher | rahul | teacher@123 |
 | Student | student01 | student@123 |
 | Student | student02 | student@123 |
@@ -139,8 +139,8 @@ The frontend dev server runs on `http://localhost:3000` and proxies API requests
 ## Login Credentials
 
 ### Admin
-- **Username:** admin
-- **Password:** admin123
+- **Username:** Prasenjit Das
+- **Password:** Prasenjit@2004
 
 ### Teacher
 - **Username:** rahul
