@@ -7,7 +7,7 @@
     "node": "22.x"
   },
   "scripts": {
-    "build": "cd backend && npm install && cd ../frontend && npm install && npm run build",
+    "build": "cd backend && npm ci --include=dev && cd ../frontend && npm ci --include=dev && npm run build",
     "start": "node backend/server.js",
     "seed": "cd backend && node utils/seed.js",
     "dev:backend": "cd backend && npm run dev",
