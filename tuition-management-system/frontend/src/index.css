@@ -393,7 +393,11 @@ a:hover { text-decoration: underline; }
   margin-top: auto;
 }
 
-/* Mobile sidebar overlay */
+/* Mobile sidebar overlay.
+   pointer-events is critical: this element covers the whole viewport, so when
+   it is hidden it must let taps through — an opacity:0 element otherwise
+   intercepts every click on page content (this broke all admin actions on
+   mobile while desktop stayed unaffected because display:none applied there). */
 .sidebar-overlay {
   display: none;
   position: fixed;
@@ -401,9 +405,10 @@ a:hover { text-decoration: underline; }
   background: var(--bg-overlay);
   z-index: 45;
   opacity: 0;
+  pointer-events: none;
   transition: opacity var(--transition-normal);
 }
-.sidebar-overlay.active { opacity: 1; }
+.sidebar-overlay.active { opacity: 1; pointer-events: auto; }
 
 /* ========================================
    Page
@@ -1501,7 +1506,26 @@ a:hover { text-decoration: underline; }
   .filters .form-control { min-width: auto; }
 
   .table { font-size: 0.8rem; display: block; overflow-x: auto; }
-  .table th, .table td { padding: 8px 10px; }
+  .table th, .table td { padding: 8px 10px; white-space: nowrap; }
+
+  /* Comfortable touch targets and no auto-zoom on input focus
+     (mobile browsers zoom when inputs are smaller than 16px). */
+  .form-control,
+  .form-group input,
+  .form-group select,
+  .form-group textarea { font-size: 16px; }
+  .btn { min-height: 42px; }
+  .btn-sm { min-height: 34px; }
+
+  /* Modals must stay reachable while the on-screen keyboard is open:
+     top-align and allow the overlay itself to scroll. */
+  .modal-overlay {
+    align-items: flex-start;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 12px;
+  }
+  .modal-content { max-height: none; }
 
   .batches-grid { grid-template-columns: 1fr; }
   .detail-grid { grid-template-columns: 1fr; }

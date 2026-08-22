@@ -33,10 +33,14 @@ app.use(helmet({
   crossOriginEmbedderPolicy: false,
 }));
 
+// Allowed browser origins. The frontend is served by this same Express service
+// in production, so same-origin API calls need no CORS entry at all; APP_URL /
+// CORS_ORIGIN cover deployments where the frontend is hosted elsewhere.
 const allowedOrigins = (process.env.CORS_ORIGIN || 'http://localhost:3000,http://localhost:5173')
   .split(',')
   .map((o) => o.trim())
   .filter(Boolean);
+if (process.env.APP_URL) allowedOrigins.push(process.env.APP_URL.replace(/\/$/, ''));
 
 app.use(cors({
   origin(origin, callback) {
@@ -44,6 +48,10 @@ app.use(cors({
     return callback(null, false);
   },
 }));
+
+if (process.env.NODE_ENV === 'production') {
+  console.log('CORS allowed origins:', allowedOrigins.join(', ') || '(none)');
+}
 
 app.use(express.json({ limit: '100kb' }));
 

@@ -68,7 +68,7 @@ const Dashboard = () => {
                   <thead><tr><th>Student</th><th>Amount</th></tr></thead>
                   <tbody>
                     {data.pendingFees.map(f => (
-                      <tr key={f._id}><td>{f.student?.fullName}</td><td>\u20B9{f.amount}</td></tr>
+                      <tr key={f._id}><td>{f.student?.fullName}</td><td>₹{f.amount}</td></tr>
                     ))}
                   </tbody>
                 </table>

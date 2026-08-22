@@ -16,6 +16,7 @@ const Fees = () => {
   const toast = useToast();
   const isAdmin = user.role === 'admin';
   const isTeacher = user.role === 'teacher';
+  const isStaff = isAdmin || isTeacher;
 
   const [tab, setTab] = useState('records');
   const [fees, setFees] = useState([]);

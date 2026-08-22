@@ -141,7 +141,7 @@ const Students = () => {
                 <td>{s.phone || '-'}</td>
                 <td>{s.parentName || '-'}</td>
                 <td>{s.batch?.name || '-'}</td>
-                <td>\u20B9{s.monthlyFee}</td>
+                <td>₹{s.monthlyFee}</td>
                 {isStaff && (
                   <td className="actions">
                     <button className="btn btn-sm btn-ghost" onClick={() => openEditModal(s)}>Edit</button>
@@ -185,7 +185,7 @@ const Students = () => {
             </div>
           </div>
           <div className="form-row">
-            <div className="form-group"><label>Monthly Fee (\u20B9)</label><input name="monthlyFee" type="number" value={form.monthlyFee} onChange={handleChange} required min="0" /></div>
+            <div className="form-group"><label>Monthly Fee (₹)</label><input name="monthlyFee" type="number" value={form.monthlyFee} onChange={handleChange} required min="0" /></div>
             <div className="form-group"><label>Joining Date</label><input name="joiningDate" type="date" value={form.joiningDate} onChange={handleChange} /></div>
           </div>
           <button type="submit" className="btn btn-primary btn-block">{editing ? 'Update Student' : 'Add Student'}</button>

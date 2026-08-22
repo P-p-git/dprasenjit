@@ -16,30 +16,38 @@ const apiCall = async (endpoint, options = {}) => {
     config.headers = getHeaders(explicitToken);
   }
 
+  let response;
   try {
-    const response = await fetch(url, config);
-    const data = await response.json();
-
-    if (!response.ok) {
-      // Stale/invalid session token cleanup. Auth endpoints are excluded so a
-      // failed login attempt never clears unrelated state. A hard redirect
-      // guarantees no role/session data lingers in React state.
-      if (response.status === 401 && !endpoint.startsWith('/auth')) {
-        if (localStorage.getItem('token')) {
-          localStorage.removeItem('token');
-          window.location.replace('/login');
-        }
-      }
-      throw new Error(data.message || 'Something went wrong');
-    }
-
-    return data;
-  } catch (error) {
-    if (error.message === 'Failed to fetch') {
-      throw new Error('Cannot connect to server. Make sure backend is running.');
-    }
-    throw error;
+    response = await fetch(url, config);
+  } catch (networkError) {
+    // fetch() rejects on network failure / DNS / CORS / mixed-content.
+    throw new Error('Unable to connect to server. Check your internet connection and try again.');
   }
+
+  // Some failures (proxies, stale caches) return non-JSON bodies; never let
+  // JSON parsing errors mask the real HTTP status.
+  let data = null;
+  try {
+    data = await response.json();
+  } catch {
+    data = null;
+  }
+
+  if (!response.ok) {
+    // Stale/invalid session token cleanup. Auth endpoints are excluded so a
+    // failed login attempt never clears unrelated state. A hard redirect
+    // guarantees no role/session data lingers in React state.
+    if (response.status === 401 && !endpoint.startsWith('/auth')) {
+      if (localStorage.getItem('token')) {
+        localStorage.removeItem('token');
+        sessionStorage.setItem('sessionExpired', '1');
+        window.location.replace('/login');
+      }
+    }
+    throw new Error(data?.message || `Request failed (${response.status})`);
+  }
+
+  return data;
 };
 
 export const authAPI = {

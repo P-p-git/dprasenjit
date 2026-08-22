@@ -7,7 +7,15 @@ const Login = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState(() => {
+    // Set by api.js when a protected request failed with 401 and the user was
+    // redirected here with a cleared token.
+    if (sessionStorage.getItem('sessionExpired')) {
+      sessionStorage.removeItem('sessionExpired');
+      return 'Your session has expired. Please login again.';
+    }
+    return '';
+  });
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
   const { mode, setTheme } = useTheme();
