@@ -18,6 +18,7 @@ import Exams from './pages/Exams';
 import Results from './pages/Results';
 import Notices from './pages/Notices';
 import Routine from './pages/Routine';
+import Queries from './pages/Queries';
 import Profile from './pages/Profile';
 import Settings from './pages/Settings';
 import Loading from './components/Loading';
@@ -63,10 +64,11 @@ function App() {
                 <Route path="batches" element={<Batches />} />
                 <Route path="attendance" element={<Attendance />} />
                 <Route path="fees" element={
-                  <ProtectedRoute roles={['admin', 'student']}>
+                  <ProtectedRoute roles={['admin', 'teacher', 'student']}>
                     <Fees />
                   </ProtectedRoute>
                 } />
+                <Route path="queries" element={<Queries />} />
                 <Route path="homework" element={<Homework />} />
                 <Route path="exams" element={<Exams />} />
                 <Route path="results" element={<Results />} />

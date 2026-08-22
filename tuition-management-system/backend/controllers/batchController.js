@@ -2,9 +2,17 @@ const Batch = require('../models/Batch');
 const Student = require('../models/Student');
 const { db } = require('../config/db');
 
+// Students may browse batches but never see other students' personal data
+const sanitizeBatchForStudent = (batch) => {
+  if (!batch) return batch;
+  const { students, ...rest } = batch;
+  return { ...rest, studentCount: Array.isArray(students) ? students.length : 0 };
+};
+
 const getBatches = async (req, res) => {
   try {
-    const batches = await Batch.find();
+    let batches = await Batch.find();
+    if (req.user.role === 'student') batches = batches.map(sanitizeBatchForStudent);
     res.json({ success: true, count: batches.length, data: batches });
   } catch (error) {
     console.error('Request failed:', error.message);
@@ -18,7 +26,7 @@ const getBatch = async (req, res) => {
     if (!batch) {
       return res.status(404).json({ success: false, message: 'Batch not found' });
     }
-    res.json({ success: true, data: batch });
+    res.json({ success: true, data: req.user.role === 'student' ? sanitizeBatchForStudent(batch) : batch });
   } catch (error) {
     console.error('Request failed:', error.message);
     res.status(500).json({ success: false, message: 'Internal server error' });

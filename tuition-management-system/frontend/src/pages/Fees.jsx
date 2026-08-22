@@ -8,6 +8,8 @@ import Modal from '../components/Modal';
 import DashboardCard from '../components/DashboardCard';
 
 const monthNames = ['', 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+// Class list mirrors the Students page filter (configurable values stored on each student)
+const classes = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12'];
 
 const Fees = () => {
   const { user } = useAuth();
@@ -24,6 +26,7 @@ const Fees = () => {
   const [error, setError] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
   const [filterBatch, setFilterBatch] = useState('');
+  const [filterClass, setFilterClass] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [form, setForm] = useState({ student: '', month: '', year: '2026', amount: '', status: 'pending', paymentMethod: '' });
 
@@ -47,6 +50,7 @@ const Fees = () => {
       const params = new URLSearchParams();
       if (filterStatus) params.append('status', filterStatus);
       if (isAdmin && filterBatch) params.append('batch', filterBatch);
+      if ((isAdmin || isTeacher) && filterClass) params.append('class', filterClass);
       const res = await feeAPI.getAll(params.toString());
       setFees(res.data);
       if (isAdmin) { const sumRes = await feeAPI.getSummary(); setSummary(sumRes.data); }
@@ -68,7 +72,7 @@ const Fees = () => {
       setRangeStudent(String(user.profile_id));
     }
   }, []);
-  useEffect(() => { fetchFees(); }, [filterStatus, filterBatch]);
+  useEffect(() => { fetchFees(); }, [filterStatus, filterBatch, filterClass]);
 
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
@@ -152,6 +156,12 @@ const Fees = () => {
               <option value="paid">Paid</option>
               <option value="pending">Pending</option>
             </select>
+            {(isAdmin || isTeacher) && (
+              <select value={filterClass} onChange={(e) => setFilterClass(e.target.value)} className="form-control">
+                <option value="">All Classes</option>
+                {classes.map(c => <option key={c} value={c}>Class {c}</option>)}
+              </select>
+            )}
             {isAdmin && (
               <select value={filterBatch} onChange={(e) => setFilterBatch(e.target.value)} className="form-control">
                 <option value="">All Batches</option>
@@ -262,9 +272,11 @@ const Fees = () => {
                       ))}
                     </tbody>
                   </table>
-                  <button className="btn btn-success" style={{ marginTop: '8px' }} onClick={() => setShowPayModal(true)}>
-                    Record Payment for {rangeResult.pendingMonthsCount} Month(s) - {"\u20B9"}{rangeResult.totalPendingAmount}
-                  </button>
+                  {isStaff && (
+                    <button className="btn btn-success" style={{ marginTop: '8px' }} onClick={() => setShowPayModal(true)}>
+                      Record Payment for {rangeResult.pendingMonthsCount} Month(s) - {"\u20B9"}{rangeResult.totalPendingAmount}
+                    </button>
+                  )}
                 </div>
               )}
 

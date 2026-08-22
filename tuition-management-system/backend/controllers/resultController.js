@@ -7,6 +7,11 @@ const getResults = async (req, res) => {
     if (exam) conditions.exam = exam;
     if (student) conditions.student = student;
 
+    // Students may only ever read their own results
+    if (req.user.role === 'student') {
+      conditions.student = req.user.profile_id;
+    }
+
     const results = await Result.find(conditions);
     res.json({ success: true, count: results.length, data: results });
   } catch (error) {

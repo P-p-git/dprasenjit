@@ -22,9 +22,13 @@ const apiCall = async (endpoint, options = {}) => {
 
     if (!response.ok) {
       // Stale/invalid session token cleanup. Auth endpoints are excluded so a
-      // failed login attempt never clears unrelated state.
+      // failed login attempt never clears unrelated state. A hard redirect
+      // guarantees no role/session data lingers in React state.
       if (response.status === 401 && !endpoint.startsWith('/auth')) {
-        localStorage.removeItem('token');
+        if (localStorage.getItem('token')) {
+          localStorage.removeItem('token');
+          window.location.replace('/login');
+        }
       }
       throw new Error(data.message || 'Something went wrong');
     }
@@ -121,6 +125,12 @@ export const routineAPI = {
   create: (data) => apiCall('/routine', { method: 'POST', body: JSON.stringify(data) }),
   update: (id, data) => apiCall(`/routine/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   delete: (id) => apiCall(`/routine/${id}`, { method: 'DELETE' }),
+};
+
+export const queryAPI = {
+  getAll: (params = '') => apiCall(`/queries?${params}`),
+  create: (data) => apiCall('/queries', { method: 'POST', body: JSON.stringify(data) }),
+  reply: (id, data) => apiCall(`/queries/${id}/reply`, { method: 'PUT', body: JSON.stringify(data) }),
 };
 
 export const dashboardAPI = {

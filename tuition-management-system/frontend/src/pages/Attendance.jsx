@@ -4,10 +4,12 @@ import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import Loading from '../components/Loading';
 import ErrorMessage from '../components/ErrorMessage';
+import DashboardCard from '../components/DashboardCard';
 
 const Attendance = () => {
   const { user } = useAuth();
   const toast = useToast();
+  const isStudent = user.role === 'student';
   const canMark = user.role === 'admin' || user.role === 'teacher';
 
   const [batches, setBatches] = useState([]);
@@ -18,7 +20,21 @@ const Attendance = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  useEffect(() => { batchAPI.getAll().then(res => setBatches(res.data)).catch(console.error); }, []);
+  // Students see only their own attendance history — never other students' records.
+  const [myRecords, setMyRecords] = useState([]);
+  const [mySummary, setMySummary] = useState(null);
+
+  useEffect(() => {
+    if (!isStudent) return;
+    attendanceAPI.getAll('')
+      .then(res => setMyRecords(res.data))
+      .catch(err => setError(err.message));
+    attendanceAPI.getSummary(user.profile_id)
+      .then(res => setMySummary(res.data))
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => { if (!isStudent) batchAPI.getAll().then(res => setBatches(res.data)).catch(console.error); }, []);
 
   useEffect(() => {
     if (!selectedBatch) { setStudents([]); return; }
@@ -56,6 +72,39 @@ const Attendance = () => {
   return (
     <div className="page">
       <h1 className="page-title">Attendance</h1>
+
+      {isStudent ? (
+        <>
+          {mySummary && (
+            <div className="cards-grid" style={{ marginBottom: '16px' }}>
+              <DashboardCard title="Attendance %" value={`${mySummary.percentage}%`} icon="A" color="#6366f1" />
+              <DashboardCard title="Present" value={mySummary.present} icon="P" color="#22c55e" />
+              <DashboardCard title="Absent" value={mySummary.absent} icon="A" color="#ef4444" />
+              <DashboardCard title="Total Classes" value={mySummary.totalClasses} icon="T" color="#f59e0b" />
+            </div>
+          )}
+          {error && <ErrorMessage message={error} />}
+          {myRecords.length === 0 ? (
+            <p className="text-muted">No attendance records yet.</p>
+          ) : (
+            <table className="table">
+              <thead>
+                <tr><th>Date</th><th>Batch</th><th>Status</th></tr>
+              </thead>
+              <tbody>
+                {myRecords.map(r => (
+                  <tr key={r._id}>
+                    <td>{r.date}</td>
+                    <td>{r.batch?.name || r.batch || '-'}</td>
+                    <td><span className={'badge badge-' + (r.status === 'present' ? 'success' : 'danger')}>{r.status}</span></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </>
+      ) : (
+      <>
       <div className="filters">
         <select value={selectedBatch} onChange={(e) => setSelectedBatch(e.target.value)} className="form-control">
           <option value="">Select Batch</option>
@@ -96,6 +145,8 @@ const Attendance = () => {
           )}
           {selectedBatch && students.length === 0 && <p className="text-muted">No students in this batch</p>}
         </>
+      )}
+      </>
       )}
     </div>
   );

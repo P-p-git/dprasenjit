@@ -11,6 +11,7 @@ const Students = () => {
   const { user } = useAuth();
   const toast = useToast();
   const isAdmin = user.role === 'admin';
+  const isStaff = user.role === 'admin' || user.role === 'teacher';
 
   const [students, setStudents] = useState([]);
   const [batches, setBatches] = useState([]);
@@ -77,11 +78,11 @@ const Students = () => {
         delete payload.username;
         delete payload.password;
         await studentAPI.update(editing._id, payload);
-        if (form.password) {
+        if (form.password && isAdmin) {
           if (form.password.length < 8) throw new Error('Password must be at least 8 characters long');
           await authAPI.resetUserPassword(editing.userId, form.password);
         }
-        toast.success(form.password ? 'Student and password updated successfully' : 'Student updated successfully');
+        toast.success(isAdmin && form.password ? 'Student and password updated successfully' : 'Student updated successfully');
       } else {
         const payload = { ...form, monthlyFee: Number(form.monthlyFee), password: form.password || undefined };
         await studentAPI.create(payload);
@@ -111,7 +112,7 @@ const Students = () => {
     <div className="page">
       <div className="page-header">
         <h1 className="page-title">Students</h1>
-        {isAdmin && <button className="btn btn-primary" onClick={openAddModal}>+ Add Student</button>}
+        {isStaff && <button className="btn btn-primary" onClick={openAddModal}>+ Add Student</button>}
       </div>
       <div className="filters">
         <input type="text" placeholder="Search by name or email..." value={search} onChange={(e) => setSearch(e.target.value)} className="form-control" />
@@ -128,11 +129,11 @@ const Students = () => {
       {loading ? <Loading /> : (
         <table className="table">
           <thead>
-            <tr><th>Name</th><th>Class</th><th>Phone</th><th>Parent</th><th>Batch</th><th>Fee</th>{isAdmin && <th>Actions</th>}</tr>
+            <tr><th>Name</th><th>Class</th><th>Phone</th><th>Parent</th><th>Batch</th><th>Fee</th>{isStaff && <th>Actions</th>}</tr>
           </thead>
           <tbody>
             {students.length === 0 ? (
-              <tr><td colSpan={isAdmin ? 7 : 6} className="text-center text-muted">No students found</td></tr>
+              <tr><td colSpan={7} className="text-center text-muted">No students found</td></tr>
             ) : students.map(s => (
               <tr key={s._id}>
                 <td><Link to={`/students/${s._id}`}>{s.fullName}</Link></td>
@@ -141,10 +142,10 @@ const Students = () => {
                 <td>{s.parentName || '-'}</td>
                 <td>{s.batch?.name || '-'}</td>
                 <td>\u20B9{s.monthlyFee}</td>
-                {isAdmin && (
+                {isStaff && (
                   <td className="actions">
                     <button className="btn btn-sm btn-ghost" onClick={() => openEditModal(s)}>Edit</button>
-                    <button className="btn btn-sm btn-danger" onClick={() => handleDelete(s._id)}>Delete</button>
+                    {isAdmin && <button className="btn btn-sm btn-danger" onClick={() => handleDelete(s._id)}>Delete</button>}
                   </td>
                 )}
               </tr>
@@ -161,7 +162,7 @@ const Students = () => {
           {!editing && (
             <div className="form-group"><label>Login Password</label><input name="password" type="text" value={form.password} onChange={handleChange} placeholder="Leave blank for default: student@123" minLength={8} title="If set, must be at least 8 characters" /></div>
           )}
-          {editing && (
+          {editing && isAdmin && (
             <div className="form-group"><label>Reset Password (optional)</label><input name="password" type="text" value={form.password} onChange={handleChange} placeholder="Enter a new password to reset, or leave blank" minLength={8} title="If set, must be at least 8 characters" /></div>
           )}
           <div className="form-row">

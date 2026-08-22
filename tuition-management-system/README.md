@@ -1,6 +1,6 @@
 # Smart Tuition - Tuition Management System
 
-A full-stack web application for managing coaching classes, students, teachers, attendance, fees, homework, exams, results, and notices.
+A full-stack web application for managing coaching classes, students, teachers, attendance, fees, homework, exams, results, notices, and student queries. Designed to work equally well on desktop and smartphone browsers.
 
 ## Project Overview
 
@@ -9,13 +9,16 @@ Smart Tuition is a comprehensive tuition management platform designed to help co
 - **Admin Dashboard** with analytics, fee summaries, and student management
 - **Teacher Dashboard** with assigned batches, homework, and exam management
 - **Student Dashboard** with attendance, results, fee status, and homework
-- **Attendance Tracking** with batch-wise marking and per-student summaries
-- **Fee Management** with individual records, pending-fee month-range detection, and range payments
+- **Attendance Tracking** with batch-wise marking and per-student summaries (students see only their own history)
+- **Fee Management** with individual records, pending-fee month-range detection, class-wise filtering, and range payments
 - **Homework & Exam Management** with batch/subject filtering
 - **Results & Grading** with automatic percentage and grade computation
 - **Notice System** for announcements to all or specific batches
+- **Weekly Routine** viewable by every role, editable by admin/teacher
+- **Student Query / Issue System** — students submit academic/class/fee/technical queries; staff reply and resolve them
 - **Dark/Light Theme** with system preference detection
-- **Role-Based Access Control** (Admin, Teacher, Student)
+- **Role-Based Access Control** (Admin → Teacher → Student), enforced by backend middleware on every API route
+- **Mobile-first responsive UI** — hamburger/drawer navigation, stacked forms, scrollable tables; all CRUD operations work from a phone browser
 
 ## Technology Stack
 
@@ -169,48 +172,61 @@ Admins can reset any teacher/student password from the Edit form in the Students
 ### Admin Features
 - Full dashboard with student/teacher/batch counts, fee summaries, and recent activity
 - Student management (CRUD, search, filter by class/batch)
-- Teacher management (CRUD)
+- Teacher management (CRUD, password resets)
 - Batch management (create, assign teachers and students)
 - Attendance marking
-- Fee management (individual records, range-based pending fee detection, range payments)
+- Fee management (individual records, range-based pending fee detection, range payments, class-wise filtering)
 - Homework and exam management
 - Result entry and management
 - Notice creation (global or batch-specific)
+- Routine management (add/edit/delete weekly class schedule)
+- View and reply to student queries
 
 ### Teacher Features
 - Dashboard showing assigned batches and students
-- View students
+- Add students (with login account) and edit student information
+- View students, filter by class/batch, search by name/email
 - Mark attendance for assigned batches
-- Create homework and exams
-- Enter exam results
+- Record student fee payments (month-range upsert; cannot create duplicate records)
+- View paid/pending fee status per student
+- Create homework and exams, enter exam results
 - Create notices
+- Manage the weekly routine
+- Reply to and resolve student queries
+
+> Teachers can never manage teacher accounts, reset passwords other than their own workflow allows, or access admin-only configuration — all enforced server-side.
 
 ### Student Features
-- Dashboard with attendance percentage, fee status, average marks, and results
-- View attendance history
-- View fee status and payment history
-- View homework
-- View exam results
-- View notices
+- Dashboard with own attendance percentage, fee status, average marks, and results
+- View own profile only (other students' profiles are blocked server-side)
+- View own attendance history and summary
+- View own fee status, payment history, paid/due amounts (read-only; payments are recorded by staff)
+- View homework, exam results, notices, and routine
+- Submit queries/issues (Academic, Class, Fee, Technical, General) and read staff replies
 
 ## Fee Management
 
 ### Fee Records Tab
 - View all fee records with status (paid/pending)
-- Filter by status
-- Mark individual fees as paid
+- Filter by status and class (staff); batch filtering for admins
+- Mark individual fees as paid (admin)
 - Admin dashboard shows total collected and pending amounts
 
 ### Pending Fee Range Tab
-- Select a student
+- Select a student (students automatically see their own summary)
 - Choose a month range (From Month/Year to To Month/Year)
 - System calculates:
   - Months with existing paid records
   - Months with existing pending records
   - Months with no records (auto-generated using student's monthly fee)
 - Shows total pending and paid amounts
-- Record payment for all pending months at once
+- Record payment for all pending months at once (admin/teacher only)
+- Payments upsert per (student, month, year) — repeat submissions never create duplicate rows
 - Supports payment methods: Cash, UPI, Bank Transfer, Card, Other
+
+## Student Queries / Issues
+
+Students submit queries from **Query / Issue** in the sidebar (categories: Academic, Class, Fee, Technical, General). Admins and teachers see all queries under **Queries**, can reply, and mark them resolved. Students see replies on their own queries only — query visibility is scoped server-side.
 
 ## Database Structure
 
@@ -226,6 +242,8 @@ Admins can reset any teacher/student password from the Edit form in the Students
 - **exams** - Exam records per batch
 - **results** - Student exam results with grades
 - **notices** - Announcements (global or batch-specific)
+- **routine** - Weekly class schedule entries
+- **queries** - Student queries/issues with staff replies
 
 ### Key Constraints
 - Foreign keys with CASCADE/SET NULL as appropriate
@@ -247,8 +265,8 @@ Admins can reset any teacher/student password from the Edit form in the Students
 |--------|----------|-------------|------|
 | GET | `/api/students` | List students (search, filter) | Admin, Teacher |
 | GET | `/api/students/:id` | Get student details | Any (students: own profile only) |
-| POST | `/api/students` | Add student | Admin |
-| PUT | `/api/students/:id` | Update student | Admin |
+| POST | `/api/students` | Add student (with login account) | Admin, Teacher |
+| PUT | `/api/students/:id` | Update student | Admin, Teacher |
 | DELETE | `/api/students/:id` | Delete student | Admin |
 
 ### Teachers
@@ -280,20 +298,30 @@ Admins can reset any teacher/student password from the Edit form in the Students
 ### Attendance
 | Method | Endpoint | Description | Auth |
 |--------|----------|-------------|------|
-| GET | `/api/attendance` | List attendance | Any |
+| GET | `/api/attendance` | List attendance (students: own records only) | Any |
 | POST | `/api/attendance` | Mark attendance (bulk) | Admin, Teacher |
-| GET | `/api/attendance/summary/:studentId` | Student summary | Any |
+| GET | `/api/attendance/summary/:studentId` | Student summary (students: own) | Any |
 
 ### Fees
 | Method | Endpoint | Description | Auth |
 |--------|----------|-------------|------|
-| GET | `/api/fees` | List fees | Any |
+| GET | `/api/fees` | List fees (students: own only) | Any |
 | POST | `/api/fees` | Create fee record | Admin |
 | PUT | `/api/fees/:id` | Update fee record | Admin |
-| GET | `/api/fees/summary` | Fee collection summary | Any |
-| GET | `/api/fees/student/:studentId` | Student fee records | Any |
-| GET | `/api/fees/pending-range` | Check pending fees for range | Any |
+| GET | `/api/fees/summary` | Fee collection summary | Admin |
+| GET | `/api/fees/student/:studentId` | Student fee records (students: own) | Any |
+| GET | `/api/fees/pending-range` | Check pending fees for range (students: own) | Any |
 | POST | `/api/fees/record-range` | Record range payment | Admin, Teacher |
+
+### Routine
+Covered above. Students can view but never modify the routine.
+
+### Queries (Student Query / Issue System)
+| Method | Endpoint | Description | Auth |
+|--------|----------|-------------|------|
+| GET | `/api/queries` | List queries (students: own only; staff: all). Optional `?status=open\|resolved` | Any |
+| POST | `/api/queries` | Submit a query | Student |
+| PUT | `/api/queries/:id/reply` | Reply / mark resolved | Admin, Teacher |
 
 ### Homework
 | Method | Endpoint | Description | Auth |
@@ -312,9 +340,9 @@ Admins can reset any teacher/student password from the Edit form in the Students
 ### Results
 | Method | Endpoint | Description | Auth |
 |--------|----------|-------------|------|
-| GET | `/api/results` | List results | Any |
+| GET | `/api/results` | List results (students: own only) | Any |
 | POST | `/api/results` | Enter/update result | Admin, Teacher |
-| GET | `/api/results/student/:studentId` | Student results | Any |
+| GET | `/api/results/student/:studentId` | Student results (students: own) | Any |
 
 ### Notices
 | Method | Endpoint | Description | Auth |
@@ -322,6 +350,15 @@ Admins can reset any teacher/student password from the Edit form in the Students
 | GET | `/api/notices` | List notices | Any |
 | POST | `/api/notices` | Create notice | Admin, Teacher |
 | DELETE | `/api/notices/:id` | Delete notice | Admin, Teacher |
+
+### Batches
+| Method | Endpoint | Description | Auth |
+|--------|----------|-------------|------|
+| GET | `/api/batches` | List batches (students: roster hidden) | Any |
+| GET | `/api/batches/:id` | Get batch with students (students: roster hidden) | Any |
+| POST | `/api/batches` | Create batch | Admin |
+| PUT | `/api/batches/:id` | Update batch | Admin |
+| DELETE | `/api/batches/:id` | Delete batch | Admin |
 
 ### Dashboard
 | Method | Endpoint | Description | Auth |
@@ -333,18 +370,24 @@ Admins can reset any teacher/student password from the Edit form in the Students
 
 ## Role Permissions
 
+Authorization is enforced by backend middleware on every route — hiding UI elements is never the only gate.
+
 | Action | Admin | Teacher | Student |
 |--------|-------|---------|---------|
-| View Dashboard | Admin only | Teacher only | Student only |
-| Manage Students | Yes | No | No |
+| View Dashboard | Own (admin) | Own (teacher) | Own (student) |
+| Add / Edit Students | Yes | Yes | No |
+| Delete Students | Yes | No | No |
 | Manage Teachers | Yes | No | No |
 | Manage Batches | Yes | No | No |
-| Mark Attendance | Yes | Yes (assigned) | No |
-| Manage Fees | Yes | Record payments | View only |
-| Create Homework | Yes | Yes | No |
-| Create Exams | Yes | Yes | No |
-| Enter Results | Yes | Yes | No |
-| Create Notices | Yes | Yes | No |
+| Mark Attendance | Yes | Yes | No |
+| View Attendance | All records | All records | Own records only |
+| Create Fee Records / Mark Paid | Yes | Range payments only | No |
+| View Fees | All | All | Own fees only (read-only) |
+| Homework / Exams / Results | Manage | Manage | View own results only |
+| Notices | Create/Delete | Create/Delete | View |
+| Routine | Manage | Manage | View only |
+| Queries | View all, reply | View all, reply | Submit + view own |
+| Password Resets | Any teacher/student account | — | — |
 
 ## Project Structure
 

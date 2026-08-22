@@ -179,6 +179,20 @@ function initializeDatabase() {
       updated_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
 
+    CREATE TABLE IF NOT EXISTS queries (
+      _id INTEGER PRIMARY KEY AUTOINCREMENT,
+      student_id INTEGER NOT NULL,
+      category TEXT NOT NULL DEFAULT 'General',
+      message TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'open' CHECK(status IN ('open', 'resolved')),
+      reply TEXT,
+      replied_by INTEGER,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+      FOREIGN KEY (student_id) REFERENCES students(_id) ON DELETE CASCADE,
+      FOREIGN KEY (replied_by) REFERENCES users(_id) ON DELETE SET NULL
+    );
+
     CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
     CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
     CREATE INDEX IF NOT EXISTS idx_students_email ON students(email);
@@ -197,6 +211,8 @@ function initializeDatabase() {
     CREATE INDEX IF NOT EXISTS idx_results_student ON results(student_id);
     CREATE INDEX IF NOT EXISTS idx_results_exam ON results(exam_id);
     CREATE INDEX IF NOT EXISTS idx_notices_batch ON notices(batch_id);
+    CREATE INDEX IF NOT EXISTS idx_queries_student ON queries(student_id);
+    CREATE INDEX IF NOT EXISTS idx_queries_status ON queries(status);
   `);
 
   runMigrations();

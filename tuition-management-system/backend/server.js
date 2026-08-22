@@ -58,6 +58,7 @@ app.use('/api/exams', require('./routes/examRoutes'));
 app.use('/api/results', require('./routes/resultRoutes'));
 app.use('/api/notices', require('./routes/noticeRoutes'));
 app.use('/api/routine', require('./routes/routineRoutes'));
+app.use('/api/queries', require('./routes/queryRoutes'));
 app.use('/api/dashboard', require('./routes/dashboardRoutes'));
 
 app.get('/api/health', (req, res) => {

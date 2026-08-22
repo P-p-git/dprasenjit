@@ -35,6 +35,12 @@ const getAttendance = async (req, res) => {
     if (date) conditions.date = date;
     if (student) conditions.student = student;
 
+    // Students may only ever read their own attendance records
+    if (req.user.role === 'student') {
+      conditions.student = req.user.profile_id;
+      delete conditions.batch;
+    }
+
     const records = await Attendance.find(conditions);
 
     res.json({ success: true, count: records.length, data: records });
