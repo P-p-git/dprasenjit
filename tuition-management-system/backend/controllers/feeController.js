@@ -4,18 +4,28 @@ const { db } = require('../config/db');
 
 const getFees = async (req, res) => {
   try {
-    const { status, month, year, student } = req.query;
+    const { status, month, year, student, batch, class: feeClass } = req.query;
     let conditions = {};
 
     if (status) conditions.status = status;
     if (month) conditions.month = parseInt(month);
     if (year) conditions.year = parseInt(year);
     if (student) conditions.student = student;
+    if (batch) conditions.batch = batch;
+    if (feeClass) conditions.class = feeClass;
+
+    // Students are ALWAYS scoped to their own records
+    if (req.user.role === 'student' && req.user.profile_id) {
+      conditions.student = req.user.profile_id;
+      delete conditions.batch;
+      delete conditions.class;
+    }
 
     const fees = await Fee.find(conditions);
     res.json({ success: true, count: fees.length, data: fees });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    console.error('Get fees error:', error.message);
+    res.status(500).json({ success: false, message: 'Internal server error' });
   }
 };
 
@@ -34,7 +44,8 @@ const createFee = async (req, res) => {
 
     res.status(201).json({ success: true, data: fee });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    console.error('Fee operation error:', error.message);
+    res.status(500).json({ success: false, message: 'Internal server error' });
   }
 };
 
@@ -52,7 +63,8 @@ const updateFee = async (req, res) => {
 
     res.json({ success: true, data: fee });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    console.error('Fee operation error:', error.message);
+    res.status(500).json({ success: false, message: 'Internal server error' });
   }
 };
 
@@ -73,7 +85,8 @@ const getFeeSummary = async (req, res) => {
       },
     });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    console.error('Fee operation error:', error.message);
+    res.status(500).json({ success: false, message: 'Internal server error' });
   }
 };
 
@@ -82,7 +95,8 @@ const getStudentFees = async (req, res) => {
     const fees = await Fee.find({ student: req.params.studentId });
     res.json({ success: true, count: fees.length, data: fees });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    console.error('Fee operation error:', error.message);
+    res.status(500).json({ success: false, message: 'Internal server error' });
   }
 };
 
@@ -160,7 +174,8 @@ const getPendingFeesRange = async (req, res) => {
       },
     });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    console.error('Fee operation error:', error.message);
+    res.status(500).json({ success: false, message: 'Internal server error' });
   }
 };
 
@@ -218,7 +233,8 @@ const recordRangePayment = async (req, res) => {
       data: { paidCount },
     });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    console.error('Fee operation error:', error.message);
+    res.status(500).json({ success: false, message: 'Internal server error' });
   }
 };
 

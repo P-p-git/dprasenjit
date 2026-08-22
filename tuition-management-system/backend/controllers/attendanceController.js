@@ -21,7 +21,8 @@ const markAttendance = async (req, res) => {
 
     res.status(201).json({ success: true, count: results.length, data: results });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    console.error('Request failed:', error.message);
+    res.status(500).json({ success: false, message: 'Internal server error' });
   }
 };
 
@@ -38,7 +39,8 @@ const getAttendance = async (req, res) => {
 
     res.json({ success: true, count: records.length, data: records });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    console.error('Request failed:', error.message);
+    res.status(500).json({ success: false, message: 'Internal server error' });
   }
 };
 
@@ -56,7 +58,8 @@ const getStudentAttendanceSummary = async (req, res) => {
       data: { totalClasses, present, absent, percentage },
     });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    console.error('Request failed:', error.message);
+    res.status(500).json({ success: false, message: 'Internal server error' });
   }
 };
 

@@ -90,12 +90,14 @@ This will create:
 
 | Role | Username | Password |
 |------|----------|----------|
-| Admin | Prasenjit Das | Prasenjit@2004 |
+| Admin | `ADMIN_USERNAME` env var (default `admin`) | `ADMIN_PASSWORD` env var — if unset, a strong random password is generated and printed ONCE in the console |
 | Teacher | rahul | teacher@123 |
 | Student | student01 | student@123 |
 | Student | student02 | student@123 |
 | Student | student03 | student@123 |
 | Student | student04 | student@123 |
+
+> **Security note:** Admin credentials are never hardcoded in the source. Set `ADMIN_NAME`, `ADMIN_USERNAME`, `ADMIN_EMAIL`, and `ADMIN_PASSWORD` environment variables before seeding a fresh production database.
 
 ### Resetting the Database
 
@@ -139,8 +141,12 @@ The frontend dev server runs on `http://localhost:3000` and proxies API requests
 ## Login Credentials
 
 ### Admin
-- **Username:** Prasenjit Das
-- **Password:** Prasenjit@2004
+- **Username:** the `ADMIN_USERNAME` environment variable (default `admin`)
+- **Password:** the `ADMIN_PASSWORD` environment variable (never stored in code)
+
+Login is a single step: username + password. There is no OTP/2FA/authenticator code.
+
+Admins can reset any teacher/student password from the Edit form in the Students/Teachers pages, or mint one-time reset links with `node utils/resetPasswordCli.js <username-or-email>`.
 
 ### Teacher
 - **Username:** rahul
@@ -156,7 +162,7 @@ The frontend dev server runs on `http://localhost:3000` and proxies API requests
 - **Username:** student04
 - **Password:** student@123
 
-> **Note:** All teacher and student accounts use a common default password for development convenience. In production, each user should have a unique, strong password.
+> **Note:** All teacher and student accounts use a common default password for development convenience. Admins should set custom passwords when creating accounts or reset them later from the admin UI.
 
 ## Features
 
@@ -239,8 +245,8 @@ The frontend dev server runs on `http://localhost:3000` and proxies API requests
 ### Students
 | Method | Endpoint | Description | Auth |
 |--------|----------|-------------|------|
-| GET | `/api/students` | List students (search, filter) | Any |
-| GET | `/api/students/:id` | Get student details | Any |
+| GET | `/api/students` | List students (search, filter) | Admin, Teacher |
+| GET | `/api/students/:id` | Get student details | Any (students: own profile only) |
 | POST | `/api/students` | Add student | Admin |
 | PUT | `/api/students/:id` | Update student | Admin |
 | DELETE | `/api/students/:id` | Delete student | Admin |
@@ -248,11 +254,19 @@ The frontend dev server runs on `http://localhost:3000` and proxies API requests
 ### Teachers
 | Method | Endpoint | Description | Auth |
 |--------|----------|-------------|------|
-| GET | `/api/teachers` | List teachers | Any |
-| GET | `/api/teachers/:id` | Get teacher details | Any |
+| GET | `/api/teachers` | List teachers | Admin |
+| GET | `/api/teachers/:id` | Get teacher details | Admin |
 | POST | `/api/teachers` | Add teacher | Admin |
 | PUT | `/api/teachers/:id` | Update teacher | Admin |
 | DELETE | `/api/teachers/:id` | Delete teacher | Admin |
+
+### Routine (Weekly Class Schedule)
+| Method | Endpoint | Description | Auth |
+|--------|----------|-------------|------|
+| GET | `/api/routine` | View weekly routine | Any |
+| POST | `/api/routine` | Add routine entry | Admin, Teacher |
+| PUT | `/api/routine/:id` | Update routine entry | Admin, Teacher |
+| DELETE | `/api/routine/:id` | Delete routine entry | Admin, Teacher |
 
 ### Batches
 | Method | Endpoint | Description | Auth |
@@ -371,7 +385,26 @@ tuition-management-system/
 
 ## Deployment
 
-### Production Build
+### Render (recommended)
+
+A `render.yaml` blueprint is included. The app deploys as ONE web service — Express serves both the API and the built React frontend from `frontend/dist/`.
+
+1. Push this repository to GitHub
+2. In Render, create a **Blueprint** from the repo (or a Web Service with the commands below)
+3. Set environment variables in the Render dashboard:
+   - `JWT_SECRET` (required, long random string)
+   - `ADMIN_PASSWORD` (used only when seeding an empty database)
+   - `CORS_ORIGIN` (your public URL, e.g. `https://your-app.onrender.com`)
+   - `NODE_ENV=production`
+   - `DATA_DIR=/data` (path of the persistent disk mount)
+4. Attach a **persistent disk** (paid plans) mounted at `/data` so the SQLite file survives deploys
+
+**Render build command:** `npm run build`
+**Render start command:** `npm start`
+
+> SQLite on the free Render tier lives on an ephemeral filesystem and resets on every deploy — use a paid plan with a disk for real data.
+
+### Production Build (local)
 ```bash
 cd frontend
 npm run build
@@ -384,8 +417,11 @@ The backend will serve the frontend from `frontend/dist/` at the root path.
 ### Environment Variables for Production
 ```env
 JWT_SECRET=<strong-random-string>
+ADMIN_PASSWORD=<initial-admin-password>
+CORS_ORIGIN=https://your-app.onrender.com
 PORT=5000
 NODE_ENV=production
+DATA_DIR=/data
 ```
 
 ## Troubleshooting

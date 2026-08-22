@@ -10,7 +10,8 @@ const getResults = async (req, res) => {
     const results = await Result.find(conditions);
     res.json({ success: true, count: results.length, data: results });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    console.error('Request failed:', error.message);
+    res.status(500).json({ success: false, message: 'Internal server error' });
   }
 };
 
@@ -25,7 +26,8 @@ const createResult = async (req, res) => {
 
     res.status(201).json({ success: true, data: result });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    console.error('Request failed:', error.message);
+    res.status(500).json({ success: false, message: 'Internal server error' });
   }
 };
 
@@ -39,7 +41,8 @@ const getStudentResults = async (req, res) => {
 
     res.json({ success: true, data: { results, avgPercentage } });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    console.error('Request failed:', error.message);
+    res.status(500).json({ success: false, message: 'Internal server error' });
   }
 };
 

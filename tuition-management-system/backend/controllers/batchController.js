@@ -7,7 +7,8 @@ const getBatches = async (req, res) => {
     const batches = await Batch.find();
     res.json({ success: true, count: batches.length, data: batches });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    console.error('Request failed:', error.message);
+    res.status(500).json({ success: false, message: 'Internal server error' });
   }
 };
 
@@ -19,7 +20,8 @@ const getBatch = async (req, res) => {
     }
     res.json({ success: true, data: batch });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    console.error('Request failed:', error.message);
+    res.status(500).json({ success: false, message: 'Internal server error' });
   }
 };
 
@@ -28,7 +30,8 @@ const createBatch = async (req, res) => {
     const batch = await Batch.create(req.body);
     res.status(201).json({ success: true, data: batch });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    console.error('Request failed:', error.message);
+    res.status(500).json({ success: false, message: 'Internal server error' });
   }
 };
 
@@ -40,7 +43,8 @@ const updateBatch = async (req, res) => {
     }
     res.json({ success: true, data: batch });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    console.error('Request failed:', error.message);
+    res.status(500).json({ success: false, message: 'Internal server error' });
   }
 };
 
@@ -54,7 +58,8 @@ const deleteBatch = async (req, res) => {
     await Batch.findByIdAndDelete(req.params.id);
     res.json({ success: true, message: 'Batch deleted successfully' });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    console.error('Request failed:', error.message);
+    res.status(500).json({ success: false, message: 'Internal server error' });
   }
 };
 
@@ -75,7 +80,8 @@ const addStudentToBatch = async (req, res) => {
     const updatedBatch = await Batch.findById(req.params.id);
     res.json({ success: true, data: updatedBatch });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    console.error('Request failed:', error.message);
+    res.status(500).json({ success: false, message: 'Internal server error' });
   }
 };
 
@@ -90,7 +96,8 @@ const removeStudentFromBatch = async (req, res) => {
     const updatedBatch = await Batch.findById(req.params.id);
     res.json({ success: true, data: updatedBatch });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    console.error('Request failed:', error.message);
+    res.status(500).json({ success: false, message: 'Internal server error' });
   }
 };
 

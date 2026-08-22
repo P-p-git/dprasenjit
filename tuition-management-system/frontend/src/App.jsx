@@ -17,6 +17,7 @@ import Homework from './pages/Homework';
 import Exams from './pages/Exams';
 import Results from './pages/Results';
 import Notices from './pages/Notices';
+import Routine from './pages/Routine';
 import Profile from './pages/Profile';
 import Settings from './pages/Settings';
 import Loading from './components/Loading';
@@ -44,8 +45,16 @@ function App() {
               }>
                 <Route index element={<Navigate to="/dashboard" replace />} />
                 <Route path="dashboard" element={<Dashboard />} />
-                <Route path="students" element={<Students />} />
-                <Route path="students/:id" element={<StudentDetail />} />
+                <Route path="students" element={
+                  <ProtectedRoute roles={['admin', 'teacher']}>
+                    <Students />
+                  </ProtectedRoute>
+                } />
+                <Route path="students/:id" element={
+                  <ProtectedRoute roles={['admin', 'teacher']}>
+                    <StudentDetail />
+                  </ProtectedRoute>
+                } />
                 <Route path="teachers" element={
                   <ProtectedRoute roles={['admin']}>
                     <Teachers />
@@ -62,6 +71,7 @@ function App() {
                 <Route path="exams" element={<Exams />} />
                 <Route path="results" element={<Results />} />
                 <Route path="notices" element={<Notices />} />
+                <Route path="routine" element={<Routine />} />
                 <Route path="profile" element={<Profile />} />
                 <Route path="settings" element={<Settings />} />
               </Route>

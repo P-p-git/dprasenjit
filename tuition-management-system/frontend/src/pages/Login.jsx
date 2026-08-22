@@ -136,13 +136,6 @@ const Login = () => {
               {loading ? 'Signing in...' : 'Sign In'}
             </button>
           </form>
-
-          <div className="login-demo">
-            <p>Demo Credentials</p>
-            <small>Admin: <strong>admin</strong> / admin123</small><br />
-            <small>Teacher: <strong>rahul</strong> / teacher@123</small><br />
-            <small>Student: <strong>student01</strong> / student@123</small>
-          </div>
         </div>
       </div>
     </div>

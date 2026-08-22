@@ -3,12 +3,24 @@ const User = require('../models/User');
 const Batch = require('../models/Batch');
 const { db } = require('../config/db');
 
+// Personal/contact fields are OPTIONAL: blank values are stored as NULL (email,
+// must stay unique-able) or '' (plain text fields).
+const cleanOptionalText = (value) => {
+  if (value === undefined || value === null) return null;
+  const trimmed = String(value).trim();
+  return trimmed === '' ? null : trimmed;
+};
+
+const validateNewPassword = (value) =>
+  typeof value === 'string' && value.length >= 8 && value.length <= 128;
+
 const getTeachers = async (req, res) => {
   try {
     const teachers = await Teacher.find();
     res.json({ success: true, count: teachers.length, data: teachers });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    console.error('Get teachers error:', error.message);
+    res.status(500).json({ success: false, message: 'Internal server error' });
   }
 };
 
@@ -20,37 +32,59 @@ const getTeacher = async (req, res) => {
     }
     res.json({ success: true, data: teacher });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    console.error('Get teacher error:', error.message);
+    res.status(500).json({ success: false, message: 'Internal server error' });
   }
 };
 
 const addTeacher = async (req, res) => {
   try {
-    const { name, email, phone, subject, qualification, joiningDate, username } = req.body;
+    const { name, email, phone, subject, qualification, joiningDate, username, password } = req.body;
 
-    if (!username) {
+    if (!name || !String(name).trim()) {
+      return res.status(400).json({ success: false, message: 'Name is required' });
+    }
+    if (!subject || !String(subject).trim()) {
+      return res.status(400).json({ success: false, message: 'Subject is required' });
+    }
+    if (!username || !String(username).trim()) {
       return res.status(400).json({ success: false, message: 'Username is required' });
     }
+    if (password !== undefined && password !== '') {
+      if (!validateNewPassword(password)) {
+        return res.status(400).json({ success: false, message: 'Password must be at least 8 characters long' });
+      }
+    }
 
-    const existingUsername = await User.findOne({ username });
+    const existingUsername = await User.findOne({ username: String(username).trim() });
     if (existingUsername) {
       return res.status(400).json({ success: false, message: 'Username already taken' });
     }
 
-    const existing = await Teacher.find();
-    const emailExists = existing.find(t => t.email === email);
-    if (emailExists) {
-      return res.status(400).json({ success: false, message: 'Teacher with this email already exists' });
+    const cleanEmail = cleanOptionalText(email);
+    if (cleanEmail) {
+      const normalized = cleanEmail.toLowerCase();
+      const emailExists = await User.findOne({ email: normalized });
+      if (emailExists) {
+        return res.status(400).json({ success: false, message: 'Teacher with this email already exists' });
+      }
     }
 
-    const teacher = await Teacher.create({ name, email, phone, subject, qualification, joiningDate });
+    const teacher = await Teacher.create({
+      name: String(name).trim(),
+      email: cleanEmail ? cleanEmail.toLowerCase() : null,
+      phone: phone || '',
+      subject: String(subject).trim(),
+      qualification, joiningDate,
+    });
 
-    const password = 'teacher@123';
+    // Shared default teacher password unless admin provides a custom one.
+    const accountPassword = password || 'teacher@123';
     const user = await User.create({
-      name,
-      username,
-      email,
-      password,
+      name: String(name).trim(),
+      username: String(username).trim(),
+      email: cleanEmail ? cleanEmail.toLowerCase() : null,
+      password: accountPassword,
       role: 'teacher',
       profileId: teacher._id,
       profileModel: 'Teacher',
@@ -61,19 +95,29 @@ const addTeacher = async (req, res) => {
     const updatedTeacher = await Teacher.findById(teacher._id);
     res.status(201).json({ success: true, data: updatedTeacher });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    console.error('Add teacher error:', error.message);
+    res.status(500).json({ success: false, message: 'Internal server error' });
   }
 };
 
 const updateTeacher = async (req, res) => {
   try {
-    const teacher = await Teacher.findByIdAndUpdate(req.params.id, req.body);
+    const payload = { ...req.body };
+    delete payload.username;
+    delete payload.userId;
+    if (payload.email !== undefined) {
+      payload.email = cleanOptionalText(payload.email);
+      if (payload.email) payload.email = payload.email.toLowerCase();
+    }
+
+    const teacher = await Teacher.findByIdAndUpdate(req.params.id, payload);
     if (!teacher) {
       return res.status(404).json({ success: false, message: 'Teacher not found' });
     }
     res.json({ success: true, data: teacher });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    console.error('Update teacher error:', error.message);
+    res.status(500).json({ success: false, message: 'Internal server error' });
   }
 };
 
@@ -93,7 +137,8 @@ const deleteTeacher = async (req, res) => {
     await Teacher.findByIdAndDelete(req.params.id);
     res.json({ success: true, message: 'Teacher deleted successfully' });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    console.error('Delete teacher error:', error.message);
+    res.status(500).json({ success: false, message: 'Internal server error' });
   }
 };
 

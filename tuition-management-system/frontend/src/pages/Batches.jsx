@@ -27,7 +27,7 @@ const Batches = () => {
 
   const fetchTeachers = async () => { try { const res = await teacherAPI.getAll(); setTeachers(res.data); } catch {} };
 
-  useEffect(() => { fetchBatches(); fetchTeachers(); }, []);
+  useEffect(() => { fetchBatches(); if (isAdmin) fetchTeachers(); }, []);
 
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 

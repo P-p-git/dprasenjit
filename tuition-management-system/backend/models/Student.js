@@ -83,6 +83,12 @@ const Student = {
     return this._mapRowWithBatch(row);
   },
 
+  async findOneByEmail(email) {
+    if (!email) return null;
+    const row = db.prepare('SELECT _id FROM students WHERE email = ? COLLATE NOCASE').get(String(email));
+    return row || null;
+  },
+
   async create(data) {
     const stmt = db.prepare(
       `INSERT INTO students (full_name, email, phone, parent_name, parent_phone, address, class, batch_id, monthly_fee, joining_date, profile_image, user_id)

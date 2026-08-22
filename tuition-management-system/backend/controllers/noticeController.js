@@ -12,7 +12,8 @@ const getNotices = async (req, res) => {
     const notices = await Notice.find(conditions);
     res.json({ success: true, count: notices.length, data: notices });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    console.error('Request failed:', error.message);
+    res.status(500).json({ success: false, message: 'Internal server error' });
   }
 };
 
@@ -26,7 +27,8 @@ const createNotice = async (req, res) => {
     });
     res.status(201).json({ success: true, data: notice });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    console.error('Request failed:', error.message);
+    res.status(500).json({ success: false, message: 'Internal server error' });
   }
 };
 
@@ -38,7 +40,8 @@ const deleteNotice = async (req, res) => {
     }
     res.json({ success: true, message: 'Notice deleted successfully' });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    console.error('Request failed:', error.message);
+    res.status(500).json({ success: false, message: 'Internal server error' });
   }
 };
 

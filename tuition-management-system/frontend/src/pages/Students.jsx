@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { studentAPI, batchAPI } from '../utils/api';
+import { studentAPI, batchAPI, authAPI } from '../utils/api';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import Loading from '../components/Loading';
@@ -23,7 +23,7 @@ const Students = () => {
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState({
     fullName: '', username: '', email: '', phone: '', parentName: '', parentPhone: '',
-    address: '', class: '', batch: '', monthlyFee: '', joiningDate: '',
+    address: '', class: '', batch: '', monthlyFee: '', joiningDate: '', password: '',
   });
 
   const fetchStudents = async () => {
@@ -53,17 +53,18 @@ const Students = () => {
 
   const openAddModal = () => {
     setEditing(null);
-    setForm({ fullName: '', username: '', email: '', phone: '', parentName: '', parentPhone: '', address: '', class: '', batch: '', monthlyFee: '', joiningDate: '' });
+    setForm({ fullName: '', username: '', email: '', phone: '', parentName: '', parentPhone: '', address: '', class: '', batch: '', monthlyFee: '', joiningDate: '', password: '' });
     setShowModal(true);
   };
 
   const openEditModal = (student) => {
     setEditing(student);
     setForm({
-      fullName: student.fullName, email: student.email, phone: student.phone,
-      parentName: student.parentName, parentPhone: student.parentPhone,
+      fullName: student.fullName, email: student.email || '', phone: student.phone || '',
+      parentName: student.parentName || '', parentPhone: student.parentPhone || '',
       address: student.address || '', class: student.class, batch: student.batch?._id || '',
       monthlyFee: student.monthlyFee, joiningDate: student.joiningDate ? student.joiningDate.split('T')[0] : '',
+      password: '',
     });
     setShowModal(true);
   };
@@ -71,13 +72,20 @@ const Students = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const payload = { ...form, monthlyFee: Number(form.monthlyFee) };
       if (editing) {
+        const payload = { ...form, monthlyFee: Number(form.monthlyFee) };
+        delete payload.username;
+        delete payload.password;
         await studentAPI.update(editing._id, payload);
-        toast.success('Student updated successfully');
+        if (form.password) {
+          if (form.password.length < 8) throw new Error('Password must be at least 8 characters long');
+          await authAPI.resetUserPassword(editing.userId, form.password);
+        }
+        toast.success(form.password ? 'Student and password updated successfully' : 'Student updated successfully');
       } else {
+        const payload = { ...form, monthlyFee: Number(form.monthlyFee), password: form.password || undefined };
         await studentAPI.create(payload);
-        toast.success('Student added successfully');
+        toast.success('Student added successfully. Default login password is "student@123" unless a custom one was set.');
       }
       setShowModal(false);
       fetchStudents();
@@ -129,8 +137,8 @@ const Students = () => {
               <tr key={s._id}>
                 <td><Link to={`/students/${s._id}`}>{s.fullName}</Link></td>
                 <td>{s.class}</td>
-                <td>{s.phone}</td>
-                <td>{s.parentName}</td>
+                <td>{s.phone || '-'}</td>
+                <td>{s.parentName || '-'}</td>
                 <td>{s.batch?.name || '-'}</td>
                 <td>\u20B9{s.monthlyFee}</td>
                 {isAdmin && (
@@ -150,15 +158,21 @@ const Students = () => {
             <div className="form-group"><label>Full Name</label><input name="fullName" value={form.fullName} onChange={handleChange} required /></div>
             <div className="form-group"><label>Username</label><input name="username" value={form.username} onChange={handleChange} required disabled={!!editing} placeholder="Login username" /></div>
           </div>
+          {!editing && (
+            <div className="form-group"><label>Login Password</label><input name="password" type="text" value={form.password} onChange={handleChange} placeholder="Leave blank for default: student@123" minLength={8} title="If set, must be at least 8 characters" /></div>
+          )}
+          {editing && (
+            <div className="form-group"><label>Reset Password (optional)</label><input name="password" type="text" value={form.password} onChange={handleChange} placeholder="Enter a new password to reset, or leave blank" minLength={8} title="If set, must be at least 8 characters" /></div>
+          )}
           <div className="form-row">
-            <div className="form-group"><label>Email</label><input name="email" type="email" value={form.email} onChange={handleChange} required disabled={!!editing} /></div>
-            <div className="form-group"><label>Phone</label><input name="phone" value={form.phone} onChange={handleChange} required /></div>
+            <div className="form-group"><label>Email (optional)</label><input name="email" type="email" value={form.email} onChange={handleChange} disabled={!!editing} /></div>
+            <div className="form-group"><label>Phone (optional)</label><input name="phone" value={form.phone} onChange={handleChange} /></div>
           </div>
           <div className="form-row">
-            <div className="form-group"><label>Parent Name</label><input name="parentName" value={form.parentName} onChange={handleChange} required /></div>
-            <div className="form-group"><label>Parent Phone</label><input name="parentPhone" value={form.parentPhone} onChange={handleChange} required /></div>
+            <div className="form-group"><label>Parent Name (optional)</label><input name="parentName" value={form.parentName} onChange={handleChange} /></div>
+            <div className="form-group"><label>Parent Phone (optional)</label><input name="parentPhone" value={form.parentPhone} onChange={handleChange} /></div>
           </div>
-          <div className="form-group"><label>Address</label><input name="address" value={form.address} onChange={handleChange} /></div>
+          <div className="form-group"><label>Address (optional)</label><input name="address" value={form.address} onChange={handleChange} /></div>
           <div className="form-row">
             <div className="form-group">
               <label>Class</label>

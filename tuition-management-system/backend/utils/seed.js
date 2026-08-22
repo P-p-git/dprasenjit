@@ -1,5 +1,6 @@
 const dotenv = require('dotenv');
 const path = require('path');
+const crypto = require('crypto');
 const { db, initializeDatabase } = require('../config/db');
 const User = require('../models/User');
 const Teacher = require('../models/Teacher');
@@ -9,6 +10,24 @@ const Fee = require('../models/Fee');
 const Notice = require('../models/Notice');
 
 dotenv.config({ path: path.join(__dirname, '..', '.env') });
+
+// Admin credentials are NEVER hardcoded. They come from environment variables
+// (ADMIN_NAME / ADMIN_USERNAME / ADMIN_EMAIL / ADMIN_PASSWORD). If no password
+// is configured, a strong random one is generated and printed ONCE so the
+// operator can log in and change it.
+const resolveAdminCredentials = () => {
+  const name = process.env.ADMIN_NAME || 'Administrator';
+  const username = process.env.ADMIN_USERNAME || 'admin';
+  const email = process.env.ADMIN_EMAIL || 'admin@tms.com';
+
+  let password = process.env.ADMIN_PASSWORD;
+  let generated = false;
+  if (!password) {
+    password = crypto.randomBytes(12).toString('base64url');
+    generated = true;
+  }
+  return { name, username, email, password, generated };
+};
 
 const seedDB = async () => {
   try {
@@ -23,6 +42,7 @@ const seedDB = async () => {
       DELETE FROM attendance;
       DELETE FROM homework;
       DELETE FROM exams;
+      DELETE FROM routine;
       DELETE FROM batch_students;
       DELETE FROM students;
       DELETE FROM batches;
@@ -31,14 +51,24 @@ const seedDB = async () => {
     `);
     console.log('Existing data cleared.');
 
+    const adminCreds = resolveAdminCredentials();
     const admin = await User.create({
-      name: 'Prasenjit',
-      username: 'Prasenjit Das',
-      email: 'dprasenjit3321@gmail.com',
-      password: 'Prasenjit@2004',
+      name: adminCreds.name,
+      username: adminCreds.username,
+      email: adminCreds.email,
+      password: adminCreds.password,
       role: 'admin',
     });
-    console.log('Admin created: Prasenjit Das / Prasenjit@2004');
+    if (adminCreds.generated) {
+      console.log('\n========================================================');
+      console.log('ADMIN PASSWORD (auto-generated, shown only once):');
+      console.log(`  Username: ${adminCreds.username}`);
+      console.log(`  Password: ${adminCreds.password}`);
+      console.log('Store it securely and set ADMIN_PASSWORD next time.');
+      console.log('========================================================\n');
+    } else {
+      console.log(`Admin created: ${adminCreds.username} (password set via ADMIN_PASSWORD env var)`);
+    }
 
     const teacher1 = await Teacher.create({
       name: 'Rahul Sharma',
@@ -144,7 +174,7 @@ const seedDB = async () => {
     console.log('Notices created');
 
     console.log('\n--- Seeding Complete ---');
-    console.log('Admin:    Prasenjit Das / Prasenjit@2004');
+    console.log(`Admin:    ${adminCreds.username} / (see ADMIN_PASSWORD or generated output above)`);
     console.log('Teacher:  rahul / teacher@123');
     console.log('Student:  student01 / student@123');
     console.log('Student:  student02 / student@123');

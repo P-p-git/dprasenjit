@@ -12,7 +12,8 @@ const getHomework = async (req, res) => {
     const homework = await Homework.find(conditions);
     res.json({ success: true, count: homework.length, data: homework });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    console.error('Request failed:', error.message);
+    res.status(500).json({ success: false, message: 'Internal server error' });
   }
 };
 
@@ -31,7 +32,8 @@ const createHomework = async (req, res) => {
     });
     res.status(201).json({ success: true, data: homework });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    console.error('Request failed:', error.message);
+    res.status(500).json({ success: false, message: 'Internal server error' });
   }
 };
 
@@ -43,7 +45,8 @@ const updateHomework = async (req, res) => {
     }
     res.json({ success: true, data: homework });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    console.error('Request failed:', error.message);
+    res.status(500).json({ success: false, message: 'Internal server error' });
   }
 };
 
@@ -55,7 +58,8 @@ const deleteHomework = async (req, res) => {
     }
     res.json({ success: true, message: 'Homework deleted successfully' });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    console.error('Request failed:', error.message);
+    res.status(500).json({ success: false, message: 'Internal server error' });
   }
 };
 

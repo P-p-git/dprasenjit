@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { feeAPI, studentAPI } from '../utils/api';
+import { feeAPI, studentAPI, batchAPI } from '../utils/api';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import Loading from '../components/Loading';
@@ -18,10 +18,12 @@ const Fees = () => {
   const [tab, setTab] = useState('records');
   const [fees, setFees] = useState([]);
   const [students, setStudents] = useState([]);
+  const [batches, setBatches] = useState([]);
   const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
+  const [filterBatch, setFilterBatch] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [form, setForm] = useState({ student: '', month: '', year: '2026', amount: '', status: 'pending', paymentMethod: '' });
 
@@ -42,18 +44,31 @@ const Fees = () => {
   const fetchFees = async () => {
     try {
       setLoading(true);
-      const params = filterStatus ? 'status=' + filterStatus : '';
-      const res = await feeAPI.getAll(params);
+      const params = new URLSearchParams();
+      if (filterStatus) params.append('status', filterStatus);
+      if (isAdmin && filterBatch) params.append('batch', filterBatch);
+      const res = await feeAPI.getAll(params.toString());
       setFees(res.data);
       if (isAdmin) { const sumRes = await feeAPI.getSummary(); setSummary(sumRes.data); }
     } catch (err) { setError(err.message); }
     finally { setLoading(false); }
   };
 
-  const fetchStudents = async () => { try { const res = await studentAPI.getAll(); setStudents(res.data); } catch {} };
+  // Students may not list all students — only staff need these dropdowns.
+  const fetchStudents = async () => {
+    if (!isAdmin && !isTeacher) return;
+    try { const res = await studentAPI.getAll(); setStudents(res.data); } catch {}
+  };
 
-  useEffect(() => { fetchStudents(); }, []);
-  useEffect(() => { fetchFees(); }, [filterStatus]);
+  useEffect(() => {
+    fetchStudents();
+    if (isAdmin) { batchAPI.getAll().then(res => setBatches(res.data)).catch(() => {}); }
+    // Students always see their own fees in the range tab
+    if (!isAdmin && !isTeacher && user?.profile_id) {
+      setRangeStudent(String(user.profile_id));
+    }
+  }, []);
+  useEffect(() => { fetchFees(); }, [filterStatus, filterBatch]);
 
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
@@ -137,6 +152,12 @@ const Fees = () => {
               <option value="paid">Paid</option>
               <option value="pending">Pending</option>
             </select>
+            {isAdmin && (
+              <select value={filterBatch} onChange={(e) => setFilterBatch(e.target.value)} className="form-control">
+                <option value="">All Batches</option>
+                {batches.map(b => <option key={b._id} value={b._id}>{b.name}</option>)}
+              </select>
+            )}
           </div>
           {error && <ErrorMessage message={error} onRetry={fetchFees} />}
           {loading ? <Loading /> : (
@@ -167,13 +188,20 @@ const Fees = () => {
       {tab === 'range' && (
         <div className="fee-range-section">
           <div className="filters" style={{ flexWrap: 'wrap', gap: '8px' }}>
-            <div className="form-group" style={{ minWidth: '200px' }}>
-              <label>Student</label>
-              <select value={rangeStudent} onChange={(e) => setRangeStudent(e.target.value)} className="form-control">
-                <option value="">Select Student</option>
-                {students.map(s => <option key={s._id} value={s._id}>{s.fullName} (Class {s.class})</option>)}
-              </select>
-            </div>
+            {(isAdmin || isTeacher) ? (
+              <div className="form-group" style={{ minWidth: '200px' }}>
+                <label>Student</label>
+                <select value={rangeStudent} onChange={(e) => setRangeStudent(e.target.value)} className="form-control">
+                  <option value="">Select Student</option>
+                  {students.map(s => <option key={s._id} value={s._id}>{s.fullName} (Class {s.class})</option>)}
+                </select>
+              </div>
+            ) : (
+              <div className="form-group" style={{ minWidth: '200px' }}>
+                <label>Student</label>
+                <input className="form-control" value="My Fee Summary" disabled />
+              </div>
+            )}
             <div className="form-group">
               <label>From Month</label>
               <select value={fromMonth} onChange={(e) => setFromMonth(e.target.value)} className="form-control">

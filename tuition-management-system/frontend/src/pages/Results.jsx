@@ -26,7 +26,17 @@ const Results = () => {
   };
 
   const fetchExamsAndStudents = async () => {
-    try { const [examsRes, studentsRes] = await Promise.all([examAPI.getAll(), studentAPI.getAll()]); setExams(examsRes.data); setStudents(studentsRes.data); } catch {}
+    try {
+      // Only staff can list all students (needed for the Enter Result form)
+      if (canManage) {
+        const [examsRes, studentsRes] = await Promise.all([examAPI.getAll(), studentAPI.getAll()]);
+        setExams(examsRes.data);
+        setStudents(studentsRes.data);
+      } else {
+        const examsRes = await examAPI.getAll();
+        setExams(examsRes.data);
+      }
+    } catch {}
   };
 
   useEffect(() => { fetchExamsAndStudents(); }, []);

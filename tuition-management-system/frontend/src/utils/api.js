@@ -1,7 +1,7 @@
 const API_BASE = '/api';
 
-const getHeaders = () => {
-  const token = localStorage.getItem('token');
+const getHeaders = (explicitToken) => {
+  const token = explicitToken || localStorage.getItem('token');
   return {
     'Content-Type': 'application/json',
     ...(token && { Authorization: `Bearer ${token}` }),
@@ -10,16 +10,22 @@ const getHeaders = () => {
 
 const apiCall = async (endpoint, options = {}) => {
   const url = `${API_BASE}${endpoint}`;
-  const config = {
-    headers: getHeaders(),
-    ...options,
-  };
+  // `token` (if provided) overrides the stored token — used by pending-MFA calls.
+  const { token: explicitToken, ...config } = options;
+  if (!config.headers) {
+    config.headers = getHeaders(explicitToken);
+  }
 
   try {
     const response = await fetch(url, config);
     const data = await response.json();
 
     if (!response.ok) {
+      // Stale/invalid session token cleanup. Auth endpoints are excluded so a
+      // failed login attempt never clears unrelated state.
+      if (response.status === 401 && !endpoint.startsWith('/auth')) {
+        localStorage.removeItem('token');
+      }
       throw new Error(data.message || 'Something went wrong');
     }
 
@@ -38,6 +44,8 @@ export const authAPI = {
   register: (userData) =>
     apiCall('/auth/register', { method: 'POST', body: JSON.stringify(userData) }),
   getMe: () => apiCall('/auth/me'),
+  resetUserPassword: (userId, newPassword) =>
+    apiCall('/auth/reset-user-password', { method: 'POST', body: JSON.stringify({ userId, newPassword }) }),
 };
 
 export const studentAPI = {
@@ -106,6 +114,13 @@ export const noticeAPI = {
   getAll: (params = '') => apiCall(`/notices?${params}`),
   create: (data) => apiCall('/notices', { method: 'POST', body: JSON.stringify(data) }),
   delete: (id) => apiCall(`/notices/${id}`, { method: 'DELETE' }),
+};
+
+export const routineAPI = {
+  getAll: () => apiCall('/routine'),
+  create: (data) => apiCall('/routine', { method: 'POST', body: JSON.stringify(data) }),
+  update: (id, data) => apiCall(`/routine/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  delete: (id) => apiCall(`/routine/${id}`, { method: 'DELETE' }),
 };
 
 export const dashboardAPI = {

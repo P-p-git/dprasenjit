@@ -54,6 +54,9 @@ const User = {
     if (updateData.is_active !== undefined) { fields.push('is_active = ?'); params.push(updateData.is_active ? 1 : 0); }
     if (updateData.profileId !== undefined) { fields.push('profile_id = ?'); params.push(updateData.profileId); }
     if (updateData.profileModel !== undefined) { fields.push('profile_model = ?'); params.push(updateData.profileModel); }
+    if (updateData.mfa_enabled !== undefined) { fields.push('mfa_enabled = ?'); params.push(updateData.mfa_enabled ? 1 : 0); }
+    if (updateData.mfa_secret !== undefined) { fields.push('mfa_secret = ?'); params.push(updateData.mfa_secret); }
+    if (updateData.mfa_verified !== undefined) { fields.push('mfa_verified = ?'); params.push(updateData.mfa_verified ? 1 : 0); }
 
     if (fields.length === 0) return this.findById(id);
 
@@ -77,9 +80,13 @@ const User = {
 
   toJSON(user) {
     if (!user) return null;
-    const { password, ...rest } = user;
+    const { password, mfa_secret, ...rest } = user;
     rest.isActive = !!rest.is_active;
     delete rest.is_active;
+    rest.mfaEnabled = !!rest.mfa_enabled;
+    delete rest.mfa_enabled;
+    rest.mfaVerified = !!rest.mfa_verified;
+    delete rest.mfa_verified;
     return rest;
   }
 };

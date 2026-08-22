@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const helmet = require('helmet');
 const path = require('path');
 const dotenv = require('dotenv');
 const { initializeDatabase } = require('./config/db');
@@ -9,15 +10,42 @@ const errorHandler = require('./middleware/errorMiddleware');
 dotenv.config({ path: path.join(__dirname, '.env') });
 
 if (!process.env.JWT_SECRET) {
-  console.warn('WARNING: JWT_SECRET is not set. Login/register will fail. Add JWT_SECRET to your environment variables.');
+  const msg = 'FATAL: JWT_SECRET is not set. Add JWT_SECRET to backend/.env before starting the server.';
+  if (process.env.NODE_ENV === 'production') {
+    console.error(msg);
+    process.exit(1);
+  }
+  console.warn('WARNING: ' + msg);
 }
 
 initializeDatabase();
 
+// contentSecurityPolicy is left off so the existing React UI (inline styles,
+// data: QR images) keeps working unchanged; re-enable with a strict policy
+// before exposing this app publicly.
 const app = express();
 
-app.use(cors());
-app.use(express.json());
+// Trust the reverse proxy (Render/Heroku-style) so req.ips/rate limiting work
+app.set('trust proxy', 1);
+
+app.use(helmet({
+  contentSecurityPolicy: false,
+  crossOriginEmbedderPolicy: false,
+}));
+
+const allowedOrigins = (process.env.CORS_ORIGIN || 'http://localhost:3000,http://localhost:5173')
+  .split(',')
+  .map((o) => o.trim())
+  .filter(Boolean);
+
+app.use(cors({
+  origin(origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
+    return callback(null, false);
+  },
+}));
+
+app.use(express.json({ limit: '100kb' }));
 
 app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/students', require('./routes/studentRoutes'));
@@ -29,6 +57,7 @@ app.use('/api/homework', require('./routes/homeworkRoutes'));
 app.use('/api/exams', require('./routes/examRoutes'));
 app.use('/api/results', require('./routes/resultRoutes'));
 app.use('/api/notices', require('./routes/noticeRoutes'));
+app.use('/api/routine', require('./routes/routineRoutes'));
 app.use('/api/dashboard', require('./routes/dashboardRoutes'));
 
 app.get('/api/health', (req, res) => {

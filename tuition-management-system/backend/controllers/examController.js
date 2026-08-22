@@ -11,7 +11,8 @@ const getExams = async (req, res) => {
     const exams = await Exam.find(conditions);
     res.json({ success: true, count: exams.length, data: exams });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    console.error('Request failed:', error.message);
+    res.status(500).json({ success: false, message: 'Internal server error' });
   }
 };
 
@@ -30,7 +31,8 @@ const createExam = async (req, res) => {
     });
     res.status(201).json({ success: true, data: exam });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    console.error('Request failed:', error.message);
+    res.status(500).json({ success: false, message: 'Internal server error' });
   }
 };
 

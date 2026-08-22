@@ -1,6 +1,6 @@
 const errorHandler = (err, req, res, next) => {
-  let statusCode = res.statusCode === 200 ? 500 : res.statusCode;
-  let message = err.message;
+  let statusCode = err.status || err.statusCode || (res.statusCode === 200 ? 500 : res.statusCode);
+  let message = statusCode >= 500 ? 'Internal server error' : err.message;
 
   if (err.code === 'SQLITE_CONSTRAINT_UNIQUE' || err.code === 'SQLITE_CONSTRAINT') {
     statusCode = 400;
@@ -17,10 +17,14 @@ const errorHandler = (err, req, res, next) => {
     message = 'Referenced record does not exist.';
   }
 
+  if (statusCode >= 500) {
+    console.error('Unhandled error:', err);
+    message = 'Internal server error';
+  }
+
   res.status(statusCode).json({
     success: false,
     message,
-    stack: process.env.NODE_ENV === 'production' ? null : err.stack,
   });
 };
 

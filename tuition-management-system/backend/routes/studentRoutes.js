@@ -5,8 +5,10 @@ const { protect, authorize } = require('../middleware/authMiddleware');
 
 router.use(protect);
 
+// Listing all students exposes personal data — staff only.
+// Students can still view their own profile via GET /:id (scoped in controller).
 router.route('/')
-  .get(getStudents)
+  .get(authorize('admin', 'teacher'), getStudents)
   .post(authorize('admin'), addStudent);
 
 router.route('/:id')

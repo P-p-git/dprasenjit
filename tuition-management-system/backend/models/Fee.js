@@ -44,6 +44,8 @@ const Fee = {
     if (conditions.month) { sql += ' AND f.month = ?'; params.push(conditions.month); }
     if (conditions.year) { sql += ' AND f.year = ?'; params.push(conditions.year); }
     if (conditions.student) { sql += ' AND f.student_id = ?'; params.push(conditions.student); }
+    if (conditions.batch) { sql += ' AND s.batch_id = ?'; params.push(conditions.batch); }
+    if (conditions.class) { sql += ' AND s.class = ?'; params.push(conditions.class); }
     sql += ' ORDER BY f.year DESC, f.month DESC';
     const rows = db.prepare(sql).all(...params);
     return rows.map(r => this._mapRow(r));

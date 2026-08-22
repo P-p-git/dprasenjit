@@ -28,10 +28,18 @@ export const AuthProvider = ({ children }) => {
     }
   }, []);
 
+  const applySession = (data) => {
+    if (data.token) {
+      localStorage.setItem('token', data.token);
+    }
+    setUser(data);
+  };
+
+  // Single-step login: username + password. The response contains the session
+  // token and user data directly.
   const login = async (username, password) => {
     const res = await authAPI.login(username, password);
-    localStorage.setItem('token', res.data.token);
-    setUser(res.data);
+    applySession(res.data);
     return res.data;
   };
 

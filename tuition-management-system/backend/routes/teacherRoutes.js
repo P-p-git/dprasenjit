@@ -6,11 +6,11 @@ const { protect, authorize } = require('../middleware/authMiddleware');
 router.use(protect);
 
 router.route('/')
-  .get(getTeachers)
+  .get(authorize('admin'), getTeachers)
   .post(authorize('admin'), addTeacher);
 
 router.route('/:id')
-  .get(getTeacher)
+  .get(authorize('admin'), getTeacher)
   .put(authorize('admin'), updateTeacher)
   .delete(authorize('admin'), deleteTeacher);
 

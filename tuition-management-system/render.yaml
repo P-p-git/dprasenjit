@@ -1,0 +1,40 @@
+# Render Blueprint for the Tuition Management System
+# Deploys as ONE web service: Express serves both the API and the built React frontend.
+#
+# Required environment variables (set in the Render Dashboard, not committed here):
+#   JWT_SECRET     - long random string (REQUIRED)
+#   ADMIN_PASSWORD - initial admin password used only when seeding an empty DB (recommended)
+#   CORS_ORIGIN    - your public URL, e.g. https://your-app.onrender.com
+#   NODE_ENV       - production
+
+services:
+  - type: web
+    name: tuition-management-system
+    runtime: node
+    plan: starter # change as needed; free tier has no persistent disk
+    region: singapore # pick the region closest to your users
+    branch: main
+    buildCommand: npm run build
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: JWT_SECRET
+        sync: false # set manually in the Render dashboard — never commit secrets
+      - key: ADMIN_PASSWORD
+        sync: false # initial admin password, only used on first seed of an empty database
+      - key: CORS_ORIGIN
+        sync: false # e.g. https://your-app.onrender.com
+      - key: DATA_DIR
+        value: /data
+      - key: APP_URL
+        sync: false # e.g. https://your-app.onrender.com
+
+# Persistent disk so the SQLite database survives deploys and restarts.
+# NOTE: disks are available on paid instance types. On the free tier the
+# filesystem is ephemeral and the database resets on each deploy.
+    disk:
+      name: sqlite-data
+      mountPath: /data
+      sizeGB: 1
